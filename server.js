@@ -292,27 +292,29 @@ app.post('/api/login', async (req, res) => {
 app.use((err, req, res, next) => {
   console.error('[错误处理]', err.stack);
   
-  // 确保设置正确的Content-Type
-  res.setHeader('Content-Type', 'application/json');
-  
   // 标准化错误状态码和消息
   const statusCode = err.status || err.statusCode || 500;
   const errorMessage = err.message || '服务器内部错误';
   
-  // 构建基础错误响应对象
+  // 构建标准化的错误响应对象
   const errorResponse = {
-    error: true,
-    message: errorMessage,
-    status: statusCode,
-    path: req.path
+    success: false,
+    error: {
+      code: statusCode,
+      message: errorMessage,
+      path: req.path,
+      timestamp: new Date().toISOString()
+    }
   };
   
   // 在开发环境下添加更多调试信息
   if (process.env.NODE_ENV === 'development') {
-    errorResponse.stack = err.stack;
+    errorResponse.error.stack = err.stack;
+    errorResponse.error.details = err.toString();
   }
   
-  // 直接使用res.json()发送响应，Express会自动处理序列化
+  // 确保所有响应都是JSON格式
+  res.setHeader('Content-Type', 'application/json');
   return res.status(statusCode).json(errorResponse);
 });
 
