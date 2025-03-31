@@ -324,20 +324,20 @@ app.use((err, req, res, next) => {
     console.log('[错误处理] 发送JSON响应:', jsonString);
     
     // 发送响应
-    return res.status(statusCode).send(jsonString);
+    return res.status(statusCode).json(baseErrorResponse);
   } catch (jsonError) {
     // 序列化失败时的处理
     console.error('[错误处理] JSON序列化失败:', jsonError);
     
     // 使用最简单的回退响应
-    const fallbackResponse = JSON.stringify({
+    const fallbackResponse = {
       error: true,
       message: '服务器内部错误',
       status: 500,
       timestamp: new Date().toISOString()
-    });
+    };
     
-    return res.status(500).send(fallbackResponse);
+    return res.status(500).json(fallbackResponse);
   }
 });
 
