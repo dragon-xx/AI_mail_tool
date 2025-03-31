@@ -19,7 +19,18 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    const { email, password } = JSON.parse(loginState);
+    let email, password;
+    try {
+      const loginData = JSON.parse(loginState);
+      email = loginData.email;
+      password = loginData.password;
+    } catch (parseError) {
+      console.log(`[收件箱] 登录状态解析失败:`, parseError.message);
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: '登录状态无效' })
+      };
+    }
     if (!email || !password) {
       console.log(`[收件箱] 获取邮件失败 - 原因: 邮箱或密码为空`);
       return {
