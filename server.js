@@ -1,15 +1,18 @@
-import express from 'express';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const routes = require('./src/server/routes');
 
 const app = express();
-app.use(express.json());
+const port = process.env.PORT || 3000;
 
-// 静态文件服务
-app.use(express.static(join(__dirname, 'dist')));
+// 中间件配置
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static('dist'));
+
+// API路由
+app.use('/api', routes);
 
 // API路由处理
 app.use('/api', (req, res, next) => {
