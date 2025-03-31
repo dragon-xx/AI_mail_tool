@@ -6,6 +6,9 @@ import Inbox from './components/Inbox';
 import MailList from './components/MailList';
 import MailDetail from './components/MailDetail';
 
+// 配置axios默认设置
+axios.defaults.baseURL = import.meta.env.PROD ? '/.netlify/functions' : '/api';
+
 // 配置axios请求拦截器
 axios.interceptors.request.use(config => {
   const loginState = localStorage.getItem('loginState');
