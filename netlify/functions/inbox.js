@@ -42,12 +42,21 @@ exports.handler = async function(event, context) {
       const mailList = [];
 
       console.log(`[收件箱] 开始获取邮件 - 邮箱: ${email}`);
+      
+      const handleError = (err) => {
+        console.log(`[收件箱] IMAP操作失败 - 邮箱: ${email}, 原因:`, err.message);
+        try {
+          imap.end();
+        } catch (endError) {
+          console.log(`[收件箱] 关闭IMAP连接失败:`, endError.message);
+        }
+        reject(handleImapError(err));
+      };
+
       imap.once('ready', () => {
         imap.openBox('INBOX', false, (err, box) => {
           if (err) {
-            console.log(`[收件箱] 打开邮箱失败 - 邮箱: ${email}, 原因:`, err.message);
-            imap.end();
-            reject(handleImapError(err));
+            handleError(err);
             return;
           }
 
@@ -88,9 +97,7 @@ exports.handler = async function(event, context) {
           });
 
           fetch.once('error', (err) => {
-            console.log(`[收件箱] 获取邮件失败 - 邮箱: ${email}, 原因:`, err.message);
-            imap.end();
-            reject(handleImapError(err));
+            handleError(err);
           });
 
           fetch.once('end', () => {
@@ -101,8 +108,7 @@ exports.handler = async function(event, context) {
       });
 
       imap.once('error', (err) => {
-        console.log(`[收件箱] IMAP连接失败 - 邮箱: ${email}, 原因:`, err.message);
-        reject(handleImapError(err));
+        handleError(err);
       });
 
       imap.connect();
@@ -116,10 +122,18 @@ exports.handler = async function(event, context) {
     console.log('[收件箱] 获取邮件异常：', error);
     const statusCode = error.statusCode || 500;
     const errorMessage = error.message || '获取邮件列表失败，请稍后重试';
-
-    return {
-      statusCode,
-      body: JSON.stringify({ message: errorMessage })
-    };
+    
+    try {
+      return {
+        statusCode,
+        body: JSON.stringify({ message: errorMessage })
+      };
+    } catch (jsonError) {
+      console.log('[收件箱] JSON序列化失败：', jsonError);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ message: '服务器内部错误' })
+      };
+    }
   }
 };
