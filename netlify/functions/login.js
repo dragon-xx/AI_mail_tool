@@ -1,6 +1,4 @@
 const Imap = require('imap');
-
-const Imap = require('imap');
 const { getImapConfig, handleImapError } = require('./utils/imapConfig');
 
 exports.handler = async function(event, context) {
