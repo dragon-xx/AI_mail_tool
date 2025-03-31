@@ -1,4 +1,4 @@
-import Imap from 'imap';
+const Imap = require('imap');
 
 exports.handler = async function(event, context) {
   // 只允许POST请求
