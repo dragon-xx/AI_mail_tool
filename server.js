@@ -300,45 +300,20 @@ app.use((err, req, res, next) => {
   const errorMessage = err.message || '服务器内部错误';
   
   // 构建基础错误响应对象
-  const baseErrorResponse = {
+  const errorResponse = {
     error: true,
     message: errorMessage,
     status: statusCode,
-    timestamp: new Date().toISOString(),
     path: req.path
   };
   
   // 在开发环境下添加更多调试信息
   if (process.env.NODE_ENV === 'development') {
-    baseErrorResponse.details = err.stack;
+    errorResponse.stack = err.stack;
   }
   
-  try {
-    // 尝试序列化响应
-    const jsonString = JSON.stringify(baseErrorResponse);
-    
-    // 验证序列化后的字符串是否为有效的JSON
-    JSON.parse(jsonString);
-    
-    // 记录响应日志
-    console.log('[错误处理] 发送JSON响应:', jsonString);
-    
-    // 发送响应
-    return res.status(statusCode).json(baseErrorResponse);
-  } catch (jsonError) {
-    // 序列化失败时的处理
-    console.error('[错误处理] JSON序列化失败:', jsonError);
-    
-    // 使用最简单的回退响应
-    const fallbackResponse = {
-      error: true,
-      message: '服务器内部错误',
-      status: 500,
-      timestamp: new Date().toISOString()
-    };
-    
-    return res.status(500).json(fallbackResponse);
-  }
+  // 直接使用res.json()发送响应，Express会自动处理序列化
+  return res.status(statusCode).json(errorResponse);
 });
 
 // 处理前端路由
