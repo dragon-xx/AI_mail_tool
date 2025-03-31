@@ -20,9 +20,10 @@ exports.handler = async function(event, context) {
   try {
     const { email, password } = JSON.parse(loginState);
     if (!email || !password) {
+      console.log(`[收件箱] 获取邮件失败 - 原因: 邮箱或密码为空`);
       return {
-        statusCode: 401,
-        body: JSON.stringify({ message: '登录信息无效' })
+        statusCode: 400,
+        body: JSON.stringify({ message: '邮箱和密码不能为空' })
       };
     }
 
@@ -50,6 +51,7 @@ exports.handler = async function(event, context) {
       const imap = new Imap(imapConfig);
       const mailList = [];
 
+      console.log(`[收件箱] 开始获取邮件 - 邮箱: ${email}`);
       imap.once('ready', () => {
         imap.openBox('INBOX', false, (err, box) => {
           if (err) {
@@ -105,6 +107,7 @@ exports.handler = async function(event, context) {
       });
 
       imap.once('error', (err) => {
+        console.log(`[收件箱] 获取邮件失败 - 邮箱: ${email}, 原因:`, err.message);
         let errorMessage = '获取邮件列表失败';
         let statusCode = 500;
 
@@ -148,9 +151,9 @@ exports.handler = async function(event, context) {
       body: JSON.stringify(messages)
     };
   } catch (error) {
-    console.error('获取收件箱异常：', error);
+    console.log('[收件箱] 获取邮件异常：', error);
     const statusCode = error.statusCode || 500;
-    const errorMessage = error.message || '获取收件箱失败，请稍后重试';
+    const errorMessage = error.message || '获取邮件列表失败，请稍后重试';
 
     return {
       statusCode,
