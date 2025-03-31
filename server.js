@@ -294,11 +294,27 @@ app.use((err, req, res, next) => {
   res.setHeader('Content-Type', 'application/json');
   const statusCode = err.status || 500;
   const errorMessage = err.message || '服务器内部错误';
-  res.status(statusCode).json({
+  const errorResponse = {
     error: true,
     message: errorMessage,
-    status: statusCode
-  });
+    status: statusCode,
+    timestamp: new Date().toISOString(),
+    path: req.path,
+    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  };
+  
+  // 确保响应是有效的JSON
+  try {
+    JSON.stringify(errorResponse);
+    res.status(statusCode).json(errorResponse);
+  } catch (jsonError) {
+    console.error('[错误处理] JSON序列化失败:', jsonError);
+    res.status(500).json({
+      error: true,
+      message: '服务器内部错误',
+      status: 500
+    });
+  }
 });
 
 // 处理前端路由
