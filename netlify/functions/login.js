@@ -85,6 +85,11 @@ exports.handler = async function(event, context) {
           errorMessage = '邮件服务器拒绝连接，请稍后重试';
           statusCode = 503;
         }
+        
+        reject({
+          statusCode,
+          message: errorMessage
+        });
 
         const error = new Error(errorMessage);
         error.statusCode = statusCode;
