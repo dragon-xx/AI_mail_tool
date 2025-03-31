@@ -14,7 +14,7 @@ app.use(express.static(join(__dirname, 'dist')));
 // API路由处理
 app.use('/api', (req, res, next) => {
   // 验证API请求的内容类型和格式
-  res.setHeader('Content-Type', 'application/json');
+  // 不手动设置Content-Type，让Express自动处理
   next();
 });
 
@@ -296,25 +296,21 @@ app.use((err, req, res, next) => {
   const statusCode = err.status || err.statusCode || 500;
   const errorMessage = err.message || '服务器内部错误';
   
-  // 构建标准化的错误响应对象
+  // 构建简化的错误响应对象
   const errorResponse = {
     success: false,
-    error: {
-      code: statusCode,
-      message: errorMessage,
-      path: req.path,
-      timestamp: new Date().toISOString()
-    }
+    message: errorMessage,
+    code: statusCode,
+    timestamp: new Date().toISOString()
   };
   
   // 在开发环境下添加更多调试信息
   if (process.env.NODE_ENV === 'development') {
-    errorResponse.error.stack = err.stack;
-    errorResponse.error.details = err.toString();
+    errorResponse.details = err.toString();
   }
   
-  // 确保所有响应都是JSON格式
-  res.setHeader('Content-Type', 'application/json');
+  // 不手动设置Content-Type，让Express自动处理
+  // 使用JSON.stringify确保响应是有效的JSON
   return res.status(statusCode).json(errorResponse);
 });
 
