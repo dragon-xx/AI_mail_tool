@@ -268,16 +268,22 @@ app.post('/api/login', async (req, res) => {
         console.log(`[认证] 登录失败 - 邮箱: ${email}, 原因:`, err.message);
         // 格式化IMAP错误信息
         let errorMessage = '连接邮件服务器失败';
+        let statusCode = 500;
+
         if (err.message.includes('ENOTFOUND')) {
           errorMessage = '无法连接到邮件服务器，请检查网络连接';
+          statusCode = 503;
         } else if (err.message.includes('ETIMEDOUT')) {
           errorMessage = '连接邮件服务器超时，请稍后重试';
-        } else if (err.message.includes('Invalid login')) {
+          statusCode = 504;
+        } else if (err.message.includes('Invalid login') || err.message.includes('AUTHENTICATIONFAILED')) {
           errorMessage = '邮箱或密码错误';
-        } else if (err.message.includes('AUTHENTICATIONFAILED')) {
-          errorMessage = '邮箱认证失败，请检查邮箱和密码';
+          statusCode = 401;
         }
-        reject(new Error(errorMessage));
+
+        const error = new Error(errorMessage);
+        error.statusCode = statusCode;
+        reject(error);
       });
 
       imap.connect();
@@ -323,7 +329,7 @@ app.use((err, req, res, next) => {
   const statusCode = err.status || err.statusCode || 500;
   const errorMessage = err.message || '服务器内部错误';
   
-  // 构建简化的错误响应对象
+  // 构建标准的错误响应对象
   const errorResponse = {
     success: false,
     message: errorMessage,
@@ -334,16 +340,40 @@ app.use((err, req, res, next) => {
   // 在开发环境下添加更多调试信息
   if (process.env.NODE_ENV === 'development') {
     errorResponse.details = err.toString();
+    errorResponse.stack = err.stack;
   }
   
-  // 不手动设置Content-Type，让Express自动处理
+  // 确保响应头设置正确的Content-Type
+  res.setHeader('Content-Type', 'application/json');
+  
   // 使用JSON.stringify确保响应是有效的JSON
-  return res.status(statusCode).json(errorResponse);
+  const jsonResponse = JSON.stringify(errorResponse);
+  return res.status(statusCode).send(jsonResponse);
+});
+
+// API路由处理中间件
+app.use('/api/*', (req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
+
+// API路由处理中间件
+app.use('/api/*', (req, res, next) => {
+  if (!req.route) {
+    return res.status(404).json({
+      success: false,
+      message: 'API endpoint not found',
+      code: 404
+    });
+  }
+  next();
 });
 
 // 处理前端路由
 app.get('*', (req, res) => {
-  res.sendFile(join(__dirname, 'dist', 'index.html'));
+  if (!req.path.startsWith('/api/')) {
+    res.sendFile(join(__dirname, 'dist', 'index.html'));
+  }
 });
 
 
