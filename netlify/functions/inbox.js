@@ -45,16 +45,19 @@ exports.handler = async function(event, context) {
       imap.once('ready', () => {
         imap.openBox('INBOX', false, (err, box) => {
           if (err) {
+            console.log(`[收件箱] 打开邮箱失败 - 邮箱: ${email}, 原因:`, err.message);
             imap.end();
-            reject(err);
+            reject(handleImapError(err));
             return;
           }
 
-          // 获取最近的10封邮件
-          const fetch = imap.seq.fetch('1:10', {
+          // 获取所有邮件
+          const fetch = imap.seq.fetch('1:*', {
             bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)'],
             struct: true
           });
+          console.log(`[收件箱] 开始获取所有邮件 - 邮箱: ${email}`);
+
 
           fetch.on('message', (msg, seqno) => {
             const email = {
@@ -85,8 +88,9 @@ exports.handler = async function(event, context) {
           });
 
           fetch.once('error', (err) => {
+            console.log(`[收件箱] 获取邮件失败 - 邮箱: ${email}, 原因:`, err.message);
             imap.end();
-            reject(err);
+            reject(handleImapError(err));
           });
 
           fetch.once('end', () => {
@@ -97,7 +101,7 @@ exports.handler = async function(event, context) {
       });
 
       imap.once('error', (err) => {
-        console.log(`[收件箱] 获取邮件失败 - 邮箱: ${email}, 原因:`, err.message);
+        console.log(`[收件箱] IMAP连接失败 - 邮箱: ${email}, 原因:`, err.message);
         reject(handleImapError(err));
       });
 
