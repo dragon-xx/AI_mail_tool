@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Layout, Menu, List, message, Typography, Button, Space } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { LogoutOutlined, RobotOutlined, InboxOutlined, SearchOutlined } from '@ant-design/icons';
+import { LogoutOutlined, RobotOutlined, InboxOutlined, SearchOutlined, BellOutlined } from '@ant-design/icons';
 import AIAnalysis from './AIAnalysis';
 import SearchMail from './SearchMail';
+import TodoReminder from './TodoReminder';
 
 const Inbox = ({ onLogout }) => {
   const [messages, setMessages] = useState([]);
@@ -132,6 +133,11 @@ const Inbox = ({ onLogout }) => {
               label: '邮件检索'
             },
             {
+              key: 'reminder',
+              icon: <BellOutlined />,
+              label: '待办提醒'
+            },
+            {
               key: 'logout',
               icon: <LogoutOutlined />,
               label: '退出',
@@ -171,3 +177,53 @@ const Inbox = ({ onLogout }) => {
                       <div>时间: {item.date?.[0] || '未知'}</div>
                     </>
                   }
+                />
+              </List.Item>
+            )}
+          />
+          </Space>
+        )}
+        {selectedMenu === 'ai' && <AIAnalysis messages={messages} />}
+        {selectedMenu === 'reminder' && <TodoReminder />}
+        {selectedMenu === 'search' && (
+          <SearchMail
+            onSearch={(searchParams) => {
+              const loginState = JSON.parse(localStorage.getItem('loginState') || '{}');
+              const userEmailDomain = loginState.email ? loginState.email.split('@')[1] : '';
+              
+              let filtered = messages;
+              
+              // 按时间范围过滤
+              if (searchParams.dateRange) {
+                const [startDate, endDate] = searchParams.dateRange;
+                filtered = filtered.filter(message => {
+                  const messageDate = new Date(message.date?.[0]).toISOString().split('T')[0];
+                  return messageDate >= startDate && messageDate <= endDate;
+                });
+              }
+              
+              // 按搜索字段和内容过滤
+              if (searchParams.searchValue) {
+                const searchValue = searchParams.searchValue.toLowerCase();
+                filtered = filtered.filter(message => {
+                  const field = searchParams.searchField;
+                  const value = message[field]?.[0]?.toLowerCase() || '';
+                  
+                  if (searchParams.searchMode === 'exact') {
+                    return value === searchValue;
+                  } else {
+                    return value.includes(searchValue);
+                  }
+                });
+              }
+              
+              setSearchResults(filtered);
+            }}
+          />
+        )}
+      </Layout.Content>
+    </Layout>
+  );
+};
+
+export default Inbox;

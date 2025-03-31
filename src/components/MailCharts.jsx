@@ -92,25 +92,132 @@ const MailCharts = ({ categories, statistics }) => {
         type: 'shadow'
       }
     },
+    legend: {
+      data: ['总量', '紧急', '发件', '收件', '已办', '待办'],
+      top: 30
+    },
     xAxis: {
       type: 'category',
-      data: ['总邮件数', '紧急邮件']
+      data: ['总邮件', '内部邮件', '外部邮件']
     },
     yAxis: {
       type: 'value',
       name: '数量（封）'
     },
-    series: [{
-      data: [
-        statistics.weeklyTotal,
-        statistics.weeklyUrgent
-      ],
-      type: 'bar',
-      showBackground: true,
-      backgroundStyle: {
-        color: 'rgba(180, 180, 180, 0.2)'
+    series: [
+      {
+        name: '总量',
+        data: [
+          statistics.weeklyTotal,
+          statistics.weeklySentInternal + statistics.weeklyReceivedInternal,
+          statistics.weeklySentExternal + statistics.weeklyReceivedExternal
+        ],
+        type: 'bar',
+        stack: 'total'
+      },
+      {
+        name: '紧急',
+        data: [statistics.weeklyUrgent, 0, 0],
+        type: 'bar',
+        stack: 'status'
+      },
+      {
+        name: '发件',
+        data: [
+          statistics.weeklySent,
+          statistics.weeklySentInternal,
+          statistics.weeklySentExternal
+        ],
+        type: 'bar',
+        stack: 'type'
+      },
+      {
+        name: '收件',
+        data: [
+          statistics.weeklyReceived,
+          statistics.weeklyReceivedInternal,
+          statistics.weeklyReceivedExternal
+        ],
+        type: 'bar',
+        stack: 'type'
+      },
+      {
+        name: '已办',
+        data: [statistics.weeklyDone, 0, 0],
+        type: 'bar',
+        stack: 'status'
+      },
+      {
+        name: '待办',
+        data: [statistics.weeklyTodo, 0, 0],
+        type: 'bar',
+        stack: 'status'
       }
-    }]
+    ]
+  });
+
+  // 总体统计柱状图配置
+  const getTotalBarOption = () => ({
+    title: {
+      text: '邮件总体统计',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    legend: {
+      data: ['发件', '收件', '已办', '待办'],
+      top: 30
+    },
+    xAxis: {
+      type: 'category',
+      data: ['内部邮件', '外部邮件']
+    },
+    yAxis: {
+      type: 'value',
+      name: '数量（封）'
+    },
+    series: [
+      {
+        name: '发件',
+        data: [
+          categories.internal.sent || 0,
+          categories.external.sent || 0
+        ],
+        type: 'bar',
+        stack: 'type'
+      },
+      {
+        name: '收件',
+        data: [
+          categories.internal.received || 0,
+          categories.external.received || 0
+        ],
+        type: 'bar',
+        stack: 'type'
+      },
+      {
+        name: '已办',
+        data: [
+          categories.internal.done || 0,
+          categories.external.done || 0
+        ],
+        type: 'bar',
+        stack: 'status'
+      },
+      {
+        name: '待办',
+        data: [
+          categories.internal.todo || 0,
+          categories.external.todo || 0
+        ],
+        type: 'bar',
+        stack: 'status'
+      }
+    ]
   });
 
   return (
@@ -123,8 +230,11 @@ const MailCharts = ({ categories, statistics }) => {
           <ReactEcharts option={getExternalPieOption()} style={{ height: '400px' }} />
         </Card>
       </div>
-      <Card>
+      <Card style={{ marginBottom: '16px' }}>
         <ReactEcharts option={getWeeklyBarOption()} style={{ height: '400px' }} />
+      </Card>
+      <Card>
+        <ReactEcharts option={getTotalBarOption()} style={{ height: '400px' }} />
       </Card>
     </div>
   );

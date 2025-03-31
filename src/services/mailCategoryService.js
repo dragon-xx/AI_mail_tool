@@ -176,9 +176,52 @@ export const analyzeStatistics = async (messages) => {
           if (mail.subject?.includes('紧急')) {
             acc.weeklyUrgent++;
           }
+
+          // 统计发件和收件数量
+          if (mail.type === 'sent') {
+            acc.weeklySent++;
+          } else {
+            acc.weeklyReceived++;
+          }
+
+          // 统计已办和待办事项
+          if (mail.status === 'done' || mail.subject?.includes('已处理') || mail.subject?.includes('已完成')) {
+            acc.weeklyDone++;
+          } else {
+            acc.weeklyTodo++;
+          }
+
+          // 按分类统计发件数量
+          if (mail.type === 'sent') {
+            if (mail.category === 'internal') {
+              acc.weeklySentInternal++;
+            } else {
+              acc.weeklySentExternal++;
+            }
+          }
+
+          // 按分类统计收件数量
+          if (mail.type !== 'sent') {
+            if (mail.category === 'internal') {
+              acc.weeklyReceivedInternal++;
+            } else {
+              acc.weeklyReceivedExternal++;
+            }
+          }
         }
         return acc;
-      }, { weeklyTotal: 0, weeklyUrgent: 0 });
+      }, {
+        weeklyTotal: 0,
+        weeklyUrgent: 0,
+        weeklySent: 0,
+        weeklyReceived: 0,
+        weeklyDone: 0,
+        weeklyTodo: 0,
+        weeklySentInternal: 0,
+        weeklySentExternal: 0,
+        weeklyReceivedInternal: 0,
+        weeklyReceivedExternal: 0
+      });
 
       resolve(stats);
     }, 0);
