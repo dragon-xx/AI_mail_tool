@@ -290,8 +290,15 @@ app.post('/api/login', async (req, res) => {
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: '服务器内部错误' });
+  console.error('[错误处理]', err.stack);
+  res.setHeader('Content-Type', 'application/json');
+  const statusCode = err.status || 500;
+  const errorMessage = err.message || '服务器内部错误';
+  res.status(statusCode).json({
+    error: true,
+    message: errorMessage,
+    status: statusCode
+  });
 });
 
 // 处理前端路由
