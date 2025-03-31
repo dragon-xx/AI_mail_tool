@@ -17,7 +17,7 @@ const Login = ({ onLoginSuccess }) => {
     message.loading('正在验证登录信息...', 0);
 
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch(import.meta.env.PROD ? '/.netlify/functions/login' : '/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
