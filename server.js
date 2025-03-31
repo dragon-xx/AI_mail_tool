@@ -266,7 +266,18 @@ app.post('/api/login', async (req, res) => {
 
       imap.once('error', (err) => {
         console.log(`[认证] 登录失败 - 邮箱: ${email}, 原因:`, err.message);
-        reject(err);
+        // 格式化IMAP错误信息
+        let errorMessage = '连接邮件服务器失败';
+        if (err.message.includes('ENOTFOUND')) {
+          errorMessage = '无法连接到邮件服务器，请检查网络连接';
+        } else if (err.message.includes('ETIMEDOUT')) {
+          errorMessage = '连接邮件服务器超时，请稍后重试';
+        } else if (err.message.includes('Invalid login')) {
+          errorMessage = '邮箱或密码错误';
+        } else if (err.message.includes('AUTHENTICATIONFAILED')) {
+          errorMessage = '邮箱认证失败，请检查邮箱和密码';
+        }
+        reject(new Error(errorMessage));
       });
 
       imap.connect();
@@ -276,15 +287,31 @@ app.post('/api/login', async (req, res) => {
   } catch (error) {
     console.error('[认证] 登录异常：', error);
     let statusCode = 500;
-    if (error.message.includes('Invalid credentials') || error.message.includes('Invalid login') || error.message.includes('LOGIN Login error or password error')) {
+    let errorMessage = error.message;
+
+    // 根据错误类型设置适当的状态码和消息
+    if (error.message.includes('邮箱或密码错误') || 
+        error.message.includes('邮箱认证失败') || 
+        error.message.includes('Invalid credentials') || 
+        error.message.includes('Invalid login') || 
+        error.message.includes('LOGIN Login error')) {
       statusCode = 401;
-    } else if (error.message.includes('Connection timed out')) {
+    } else if (error.message.includes('超时') || 
+               error.message.includes('Connection timed out')) {
       statusCode = 504;
-    } else if (error.message.includes('getaddrinfo ENOTFOUND')) {
+      errorMessage = '连接邮件服务器超时，请稍后重试';
+    } else if (error.message.includes('ENOTFOUND') || 
+               error.message.includes('无法连接')) {
       statusCode = 503;
+      errorMessage = '无法连接到邮件服务器，请检查网络连接';
     }
 
-    res.status(statusCode).json({ message: error.message });
+    // 确保返回标准的JSON格式响应
+    res.status(statusCode).json({
+      success: false,
+      message: errorMessage,
+      code: statusCode
+    });
   }
 });
 
